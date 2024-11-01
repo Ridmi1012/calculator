@@ -1,5 +1,4 @@
 import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:math_expressions/math_expressions.dart';
@@ -37,6 +36,7 @@ class _MyHomePageState extends State<MyHomePage> {
   String _expression = ''; // Expression input by the user
   double _resultFontSize = 48; // Default font size for the result
   bool _isResultDisplayed = false; // Track if result is displayed
+  static const int MAX_EXPRESSION_LENGTH = 20;
 
   void _onButtonPressed(String value) {
     setState(() {
@@ -44,6 +44,11 @@ class _MyHomePageState extends State<MyHomePage> {
         // If equals is pressed, calculate the result
         _onEnter();
         return; // Don't add to the expression
+      }
+
+      // Prevent further input if expression length exceeds MAX_EXPRESSION_LENGTH
+      if (_expression.length >= MAX_EXPRESSION_LENGTH) {
+        return; // Stop adding characters if max length reached
       }
 
       if (isOperator(value) &&
@@ -96,30 +101,69 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  void _calculateSquareRoot() {
+    setState(() {
+      // Extract the last number in the expression to apply the square root
+      final match = RegExp(r'\d+(\.\d+)?$').firstMatch(_expression);
+      if (match != null) {
+        final lastNumberStr = match.group(0) ?? '0';
+        final lastNumber = double.tryParse(lastNumberStr) ?? 0;
+
+        if (lastNumber >= 0) {
+          // Calculate square root and replace the last number with the result
+          final sqrtResult = sqrt(lastNumber).toStringAsFixed(4);
+          _expression = _expression.replaceFirst(RegExp(r'\d+(\.\d+)?$'), sqrtResult);
+        } else {
+          _displayValue = 'Error';
+          _expression = '';
+        }
+        _onEnter(); // Calculate the new result
+      }
+    });
+  }
+
+  void _calculatePercentage() {
+    setState(() {
+      // Apply percentage to the last operand in the expression
+      final match = RegExp(r'\d+(\.\d+)?$').firstMatch(_expression);
+      if (match != null) {
+        final lastNumberStr = match.group(0) ?? '0';
+        final lastNumber = double.tryParse(lastNumberStr) ?? 0;
+
+        // Calculate the percentage and replace last operand with result
+        final percentResult = (lastNumber / 100).toStringAsFixed(4);
+        _expression = _expression.replaceFirst(RegExp(r'\d+(\.\d+)?$'), percentResult);
+      }
+    });
+  }
+
   void _onEnter() {
     try {
       if (_expression.isEmpty) return;
-
-      // Check for division by zero
-      if (_expression.contains('/0')) {
-        throw Exception('Division by zero');
-      }
 
       Parser p = Parser();
       Expression exp = p.parse(_expression.replaceAll('x', '*'));
       ContextModel cm = ContextModel();
       double eval = exp.evaluate(EvaluationType.REAL, cm);
 
-      String formattedResult = eval % 1 == 0 ? eval.toInt().toString() : eval.toString();
+      // Limit decimal places to prevent overflow
+      String formattedResult = eval.toStringAsFixed(8);
 
-      // Set the result to the display
+      // Remove unnecessary trailing zeroes after decimal
+      if (formattedResult.contains('.')) {
+        formattedResult = formattedResult.replaceAll(RegExp(r'0*$'), '').replaceAll(RegExp(r'\.$'), '');
+      }
+
+      // Limit displayed digits to prevent overflow in UI
+      if (formattedResult.length > 10) {
+        formattedResult = eval.toStringAsExponential(6); // Switch to exponential if too long
+      }
+
       setState(() {
         _displayValue = formattedResult; // Update display with result
         _isResultDisplayed = true; // Set result display status
         _resultFontSize = 64; // Increase font size for the result
-
-        // Clear expression when result is displayed
-        _expression = '';
+        _expression = ''; // Clear expression when result is displayed
       });
     } catch (e) {
       setState(() {
@@ -131,42 +175,17 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  void _calculatePercentage() {
-    setState(() {
-      if (_expression.isNotEmpty) {
-        // Assume the last number in the expression is the base
-        final parts = _expression.split(RegExp(r'[\+\-\*/]'));
-        if (parts.length >= 2) {
-          double percentage = double.tryParse(parts[parts.length - 2]) ?? 0; // Get the percentage part
-          double baseNumber = double.tryParse(parts.last) ?? 0; // Get the base number
-          double result = (percentage / 100) * baseNumber; // Calculate the percentage
-          // Update the expression with the new percentage calculation
-          _expression = _expression.replaceRange(_expression.length - parts.last.length, _expression.length, result.toString()); // Replace last number with percentage result
-        }
-      }
-    });
-  }
 
-  void _calculateSquareRoot() {
-    setState(() {
-      if (_expression.isNotEmpty) {
-        double number = double.tryParse(_expression) ?? 0;
-        if (number >= 0) {
-          _expression = (sqrt(number)).toString(); // Calculate square root
-        } else {
-          _expression = 'Error'; // Handle negative input
-        }
-        _onEnter(); // Automatically calculate after square root
-      }
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        title: Text(widget.title),
+        title: Text(
+          widget.title,
+          style: const TextStyle(color: Colors.white), // Set title color to white
+        ),
         backgroundColor: Colors.black,
       ),
       body: Container(
