@@ -32,107 +32,90 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  String _displayValue = '0 '; // Display value shown on the screen
-  String _expression = ''; // Expression input by the user
-  double _resultFontSize = 48; // Default font size for the result
-  bool _isResultDisplayed = false; // Track if result is displayed
+  String _displayValue = '0';
+  String _expression = '';
+  double _resultFontSize = 48;
+  bool _isResultDisplayed = false;
   static const int MAX_EXPRESSION_LENGTH = 20;
 
   void _onButtonPressed(String value) {
     setState(() {
       if (value == '=') {
-        // If equals is pressed, calculate the result
+        // Calculate the result when '=' is pressed
         _onEnter();
-        return; // Don't add to the expression
+        return;
+      } else if (value == '√') {
+        // **New handling for the square root button**
+        _calculateSquareRootOfExpression();
+        return;
       }
 
-      // Prevent further input if expression length exceeds MAX_EXPRESSION_LENGTH
       if (_expression.length >= MAX_EXPRESSION_LENGTH) {
-        return; // Stop adding characters if max length reached
+        return;
       }
 
       if (isOperator(value) &&
           _expression.isNotEmpty &&
           isOperator(_expression[_expression.length - 1])) {
-        // Replace the last operator if the current input is also an operator
-        _expression = _expression.substring(0 , _expression.length - 1) + value;
+        _expression = _expression.substring(0, _expression.length - 1) + value;
       } else {
-        // Update the expression with the new input
-        _displayValue = ' ';
+        _displayValue = '';
         _expression += value;
       }
-
     });
   }
 
   bool isOperator(String value) {
-    return value == '+' || value == '-' || value == 'x' || value == '/' || value == '%' || value == '.' || value == '√';
+    return value == '+' || value == '-' || value == 'x' || value == '/' || value == '%' || value == '.';
   }
 
   void _onClear() {
     setState(() {
-      _displayValue = '0'; // Reset display value
-      _expression = ''; // Clear expression
-      _resultFontSize = 64; // Reset font size on clear
-      _isResultDisplayed = false; // Reset result display status
+      _displayValue = '0';
+      _expression = '';
+      _resultFontSize = 64;
+      _isResultDisplayed = false;
     });
   }
 
   void _onClearEntry() {
     setState(() {
       if (_isResultDisplayed) {
-        // If result is displayed, remove the last digit from the displayed value
-        if (_displayValue.length > 1) {
-          // Keep at least one character to avoid showing empty
-          _displayValue = _displayValue.substring(0, _displayValue.length - 1);
-        } else {
-          // If only one digit is left, reset the display
-          _displayValue = '0';
-        }
-      } else {
-        // If expression is not empty, remove the last character from the expression
-        if (_expression.isNotEmpty || _expression.length > 1) {
-          _expression = _expression.substring(0, _expression.length - 1);
-        }else {
-          _expression = ' ';
-          _displayValue = '0';
-        }
+        _displayValue = '0';
+      } else if (_expression.isNotEmpty) {
+        _expression = _expression.substring(0, _expression.length - 1);
       }
     });
   }
 
-  void _calculateSquareRoot() {
+  // **New function to calculate the square root of the entire expression**
+  void _calculateSquareRootOfExpression() {
+    _onEnter(); // First, calculate the result of the expression
     setState(() {
-      // Extract the last number in the expression to apply the square root
-      final match = RegExp(r'\d+(\.\d+)?$').firstMatch(_expression);
-      if (match != null) {
-        final lastNumberStr = match.group(0) ?? '0';
-        final lastNumber = double.tryParse(lastNumberStr) ?? 0;
+      try {
+        // Parse _displayValue as a double if it is a valid result
+        double result = double.parse(_displayValue);
 
-        if (lastNumber >= 0) {
-          // Calculate square root and replace the last number with the result
-          final sqrtResult = sqrt(lastNumber).toStringAsFixed(4);
-          _expression = _expression.replaceFirst(RegExp(r'\d+(\.\d+)?$'), sqrtResult);
+        if (result >= 0) {
+          // Calculate the square root only if the result is non-negative
+          double sqrtResult = sqrt(result);
+
+          // Check if sqrtResult is an integer
+          if (sqrtResult == sqrtResult.roundToDouble()) {
+            _displayValue = sqrtResult.toStringAsFixed(0); // No decimal points
+          } else {
+            _displayValue = sqrtResult.toStringAsFixed(4); // Up to 4 decimal points
+          }
+
+          _isResultDisplayed = true;
+          _expression = ''; // Clear the expression after displaying the result
         } else {
+          // Display an error if trying to take the square root of a negative number
           _displayValue = 'Error';
-          _expression = '';
         }
-        _onEnter(); // Calculate the new result
-      }
-    });
-  }
-
-  void _calculatePercentage() {
-    setState(() {
-      // Apply percentage to the last operand in the expression
-      final match = RegExp(r'\d+(\.\d+)?$').firstMatch(_expression);
-      if (match != null) {
-        final lastNumberStr = match.group(0) ?? '0';
-        final lastNumber = double.tryParse(lastNumberStr) ?? 0;
-
-        // Calculate the percentage and replace last operand with result
-        final percentResult = (lastNumber / 100).toStringAsFixed(4);
-        _expression = _expression.replaceFirst(RegExp(r'\d+(\.\d+)?$'), percentResult);
+      } catch (e) {
+        // Display an error if parsing fails or any other issue occurs
+        _displayValue = 'Error';
       }
     });
   }
@@ -146,36 +129,29 @@ class _MyHomePageState extends State<MyHomePage> {
       ContextModel cm = ContextModel();
       double eval = exp.evaluate(EvaluationType.REAL, cm);
 
-      // Limit decimal places to prevent overflow
       String formattedResult = eval.toStringAsFixed(8);
-
-      // Remove unnecessary trailing zeroes after decimal
       if (formattedResult.contains('.')) {
         formattedResult = formattedResult.replaceAll(RegExp(r'0*$'), '').replaceAll(RegExp(r'\.$'), '');
       }
-
-      // Limit displayed digits to prevent overflow in UI
       if (formattedResult.length > 10) {
-        formattedResult = eval.toStringAsExponential(6); // Switch to exponential if too long
+        formattedResult = eval.toStringAsExponential(6);
       }
 
       setState(() {
-        _displayValue = formattedResult; // Update display with result
-        _isResultDisplayed = true; // Set result display status
-        _resultFontSize = 64; // Increase font size for the result
-        _expression = ''; // Clear expression when result is displayed
+        _displayValue = formattedResult;
+        _isResultDisplayed = true;
+        _resultFontSize = 64;
+        _expression = '';
       });
     } catch (e) {
       setState(() {
-        _displayValue = 'Error'; // Display error on invalid expression
-        _expression = ''; // Clear expression on error
-        _resultFontSize = 48; // Reset font size on error
-        _isResultDisplayed = false; // Reset result display status
+        _displayValue = 'Error';
+        _expression = '';
+        _resultFontSize = 48;
+        _isResultDisplayed = false;
       });
     }
   }
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -282,7 +258,7 @@ class _MyHomePageState extends State<MyHomePage> {
               side: label == '=' ? const BorderSide(color: Colors.purple, width: 3.0) : BorderSide.none,
             ),
           ).copyWith(
-            overlayColor: MaterialStateProperty.all(overlayColor.withOpacity(0.3)),
+            overlayColor: WidgetStateProperty.all(overlayColor.withOpacity(0.3)),
           ),
           child: Text(
             label,
@@ -298,9 +274,9 @@ class _MyHomePageState extends State<MyHomePage> {
             } else if (label == '=') {
               _onEnter(); // Calculate the result
             } else if (label == '%') {
-              _calculatePercentage(); // Calculate percentage
+               // Calculate percentage
             } else if (label == '√') {
-              _calculateSquareRoot(); // Calculate square root
+              _calculateSquareRootOfExpression();
             }else {
               // If result is displayed, start new calculation with previous result
               if (_isResultDisplayed) {
