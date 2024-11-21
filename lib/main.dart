@@ -36,16 +36,14 @@ class _MyHomePageState extends State<MyHomePage> {
   String _expression = '';
   double _resultFontSize = 48;
   bool _isResultDisplayed = false;
-  static const int MAX_EXPRESSION_LENGTH = 20;
+  static const int MAX_EXPRESSION_LENGTH = 15;
 
   void _onButtonPressed(String value) {
     setState(() {
       if (value == '=') {
-        // Calculate the result when '=' is pressed
         _onEnter();
         return;
       } else if (value == '√') {
-        // **New handling for the square root button**
         _calculateSquareRootOfExpression();
         return;
       }
@@ -54,7 +52,10 @@ class _MyHomePageState extends State<MyHomePage> {
         return;
       }
 
-      if (isOperator(value) &&
+      // Handle brackets
+      if (value == '( )') {
+        _handleBrackets();
+      } else if (isOperator(value) &&
           _expression.isNotEmpty &&
           isOperator(_expression[_expression.length - 1])) {
         _expression = _expression.substring(0, _expression.length - 1) + value;
@@ -65,13 +66,28 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  void _handleBrackets() {
+    setState(() {
+      int openBrackets = _expression.split('(').length - 1;
+      int closeBrackets = _expression.split(')').length - 1;
+
+      if (openBrackets > closeBrackets) {
+        // Add a closing bracket if there's an unmatched opening bracket
+        _expression += ')';
+      } else {
+        // Add an opening bracket if the counts are equal
+        _expression += '(';
+      }
+    });
+  }
+
   bool isOperator(String value) {
-    return value == '+' || value == '-' || value == 'x' || value == '/' || value == '%' || value == '.';
+    return value == '+' || value == '-' || value == 'x' || value == '/'  || value == '.' || value == '√';
   }
 
   void _onClear() {
     setState(() {
-      _displayValue = '0';
+      _displayValue = ' ';
       _expression = '';
       _resultFontSize = 64;
       _isResultDisplayed = false;
@@ -81,7 +97,7 @@ class _MyHomePageState extends State<MyHomePage> {
   void _onClearEntry() {
     setState(() {
       if (_isResultDisplayed) {
-        _displayValue = '0';
+        _displayValue = ' ';
       } else if (_expression.isNotEmpty) {
         _expression = _expression.substring(0, _expression.length - 1);
       }
@@ -124,35 +140,65 @@ class _MyHomePageState extends State<MyHomePage> {
     try {
       if (_expression.isEmpty) return;
 
-      Parser p = Parser();
-      Expression exp = p.parse(_expression.replaceAll('x', '*'));
-      ContextModel cm = ContextModel();
-      double eval = exp.evaluate(EvaluationType.REAL, cm);
-
-      String formattedResult = eval.toStringAsFixed(8);
-      if (formattedResult.contains('.')) {
-        formattedResult = formattedResult.replaceAll(RegExp(r'0*$'), '').replaceAll(RegExp(r'\.$'), '');
-      }
-      if (formattedResult.length > 10) {
-        formattedResult = eval.toStringAsExponential(6);
+      // Check for division by zero explicitly in the expression
+      if (_expression.contains('/0')) {
+        setState(() {
+          _displayValue = 'Error';
+          _expression = '';
+          _isResultDisplayed = false;
+        });
+        return;
       }
 
+      // Parse and evaluate the expression
+      Parser parser = Parser();
+      Expression exp = parser.parse(_expression.replaceAll('x', '*'));
+      ContextModel contextModel = ContextModel();
+      double eval = exp.evaluate(EvaluationType.REAL, contextModel);
+
+      // Format the result
+      String formatResult(num eval) {
+        String formattedResult;
+
+        if (eval.abs() < 1e4 && eval.abs() > 1e-4) {
+          // Use fixed-point notation for numbers in a reasonable range
+          formattedResult = eval.toStringAsFixed(7);
+
+          // Remove trailing zeros and unnecessary decimal points
+          formattedResult = formattedResult
+              .replaceAll(RegExp(r'0+$'), '') // Remove trailing zeros after the decimal
+              .replaceAll(RegExp(r'\.$'), ''); // Remove decimal point if no fractional part
+        } else {
+          // Use exponential notation for very large or small numbers
+          formattedResult = eval.toStringAsExponential(4);
+        }
+
+        return formattedResult;
+      }
+
+      // Update the state with the formatted result
       setState(() {
-        _displayValue = formattedResult;
+        if (eval.isInfinite || eval.isNaN) {
+          _displayValue = 'Error'; // Handle cases like 1/0 or invalid numbers
+        } else {
+          _displayValue = formatResult(eval);
+        }
         _isResultDisplayed = true;
         _resultFontSize = 64;
         _expression = '';
       });
     } catch (e) {
+      // Handle errors (e.g., invalid input or parsing issues)
       setState(() {
         _displayValue = 'Error';
         _expression = '';
-        _resultFontSize = 48;
+        _resultFontSize = 46;
         _isResultDisplayed = false;
       });
+      // Optionally log the error for debugging
+      print('Error evaluating expression: $e');
     }
   }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -165,31 +211,41 @@ class _MyHomePageState extends State<MyHomePage> {
         backgroundColor: Colors.black,
       ),
       body: Container(
+        alignment: Alignment.bottomRight, // Ensure the entire content aligns to bottom-right
         padding: const EdgeInsets.all(20),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.end,
+          crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             Expanded(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.end,
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: Text(
-                      _expression,
-                      style: GoogleFonts.rubik(
-                        textStyle: const TextStyle(fontSize: 48, color: Colors.grey),
+                  // Horizontal scroll for the expression aligned to the right corner
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Align(
+                      alignment: Alignment.centerRight,  // Correct alignment to right corner
+                      child: Text(
+                        _expression,
+                        style: GoogleFonts.rubik(
+                          textStyle: const TextStyle(fontSize: 48, color: Colors.grey),
+                        ),
                       ),
                     ),
                   ),
                   const SizedBox(height: 10),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: Text(
-                      _displayValue.isEmpty ? ' ' : _displayValue, // Display 0 if no value
-                      style: GoogleFonts.rubik(
-                        textStyle: TextStyle(fontSize: _resultFontSize, color: Colors.white),
+                  // Horizontal scroll for the result aligned to the right corner
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Align(
+                      alignment: Alignment.centerRight,  // Correct alignment to right corner
+                      child: Text(
+                        _displayValue.isEmpty ? ' ' : _displayValue, // Display 0 if no value
+                        style: GoogleFonts.rubik(
+                          textStyle: TextStyle(fontSize: _resultFontSize, color: Colors.white),
+                        ),
                       ),
                     ),
                   ),
@@ -199,7 +255,7 @@ class _MyHomePageState extends State<MyHomePage> {
             Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                buildButtonRow(['AC', 'C', '%', '/']),
+                buildButtonRow(['AC', 'C', '( )', '/']),
                 buildButtonRow(['7', '8', '9', 'x']),
                 buildButtonRow(['4', '5', '6', '-']),
                 buildButtonRow(['1', '2', '3', '+']),
@@ -211,6 +267,9 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
     );
   }
+
+
+
 
   Widget buildButtonRow(List<String> labels) {
     return Row(
@@ -228,7 +287,7 @@ class _MyHomePageState extends State<MyHomePage> {
     Color overlayColor;
     double buttonFontSize = fontSize;
 
-    if (label == 'AC' || label == '00') {
+    if (label == 'AC' || label == '( )') {
       buttonFontSize = 16; // Smaller font size for AC and 00
     }
 
@@ -273,8 +332,6 @@ class _MyHomePageState extends State<MyHomePage> {
               _onClearEntry(); // Clear the last entry
             } else if (label == '=') {
               _onEnter(); // Calculate the result
-            } else if (label == '%') {
-               // Calculate percentage
             } else if (label == '√') {
               _calculateSquareRootOfExpression();
             }else {
@@ -292,7 +349,3 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 }
-
-//To Do
-//can't find the square root of a continues calclation
-//percentage is not working properly
