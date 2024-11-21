@@ -41,11 +41,9 @@ class _MyHomePageState extends State<MyHomePage> {
   void _onButtonPressed(String value) {
     setState(() {
       if (value == '=') {
-        // Calculate the result when '=' is pressed
         _onEnter();
         return;
       } else if (value == '√') {
-        // **New handling for the square root button**
         _calculateSquareRootOfExpression();
         return;
       }
@@ -54,7 +52,10 @@ class _MyHomePageState extends State<MyHomePage> {
         return;
       }
 
-      if (isOperator(value) &&
+      // Handle brackets
+      if (value == '( )') {
+        _handleBrackets();
+      } else if (isOperator(value) &&
           _expression.isNotEmpty &&
           isOperator(_expression[_expression.length - 1])) {
         _expression = _expression.substring(0, _expression.length - 1) + value;
@@ -65,8 +66,23 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  void _handleBrackets() {
+    setState(() {
+      int openBrackets = _expression.split('(').length - 1;
+      int closeBrackets = _expression.split(')').length - 1;
+
+      if (openBrackets > closeBrackets) {
+        // Add a closing bracket if there's an unmatched opening bracket
+        _expression += ')';
+      } else {
+        // Add an opening bracket if the counts are equal
+        _expression += '(';
+      }
+    });
+  }
+
   bool isOperator(String value) {
-    return value == '+' || value == '-' || value == 'x' || value == '/' || value == '%' || value == '.';
+    return value == '+' || value == '-' || value == 'x' || value == '/'  || value == '.' || value == '√';
   }
 
   void _onClear() {
@@ -129,12 +145,12 @@ class _MyHomePageState extends State<MyHomePage> {
       ContextModel cm = ContextModel();
       double eval = exp.evaluate(EvaluationType.REAL, cm);
 
-      String formattedResult = eval.toStringAsFixed(8);
+      String formattedResult = eval.toStringAsFixed(7);
       if (formattedResult.contains('.')) {
         formattedResult = formattedResult.replaceAll(RegExp(r'0*$'), '').replaceAll(RegExp(r'\.$'), '');
       }
       if (formattedResult.length > 10) {
-        formattedResult = eval.toStringAsExponential(6);
+        formattedResult = eval.toStringAsExponential(8);
       }
 
       setState(() {
@@ -147,7 +163,7 @@ class _MyHomePageState extends State<MyHomePage> {
       setState(() {
         _displayValue = 'Error';
         _expression = '';
-        _resultFontSize = 48;
+        _resultFontSize = 46;
         _isResultDisplayed = false;
       });
     }
@@ -199,7 +215,7 @@ class _MyHomePageState extends State<MyHomePage> {
             Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                buildButtonRow(['AC', 'C', '%', '/']),
+                buildButtonRow(['AC', 'C', '( )', '/']),
                 buildButtonRow(['7', '8', '9', 'x']),
                 buildButtonRow(['4', '5', '6', '-']),
                 buildButtonRow(['1', '2', '3', '+']),
@@ -228,7 +244,7 @@ class _MyHomePageState extends State<MyHomePage> {
     Color overlayColor;
     double buttonFontSize = fontSize;
 
-    if (label == 'AC' || label == '00') {
+    if (label == 'AC' || label == '( )') {
       buttonFontSize = 16; // Smaller font size for AC and 00
     }
 
@@ -273,8 +289,6 @@ class _MyHomePageState extends State<MyHomePage> {
               _onClearEntry(); // Clear the last entry
             } else if (label == '=') {
               _onEnter(); // Calculate the result
-            } else if (label == '%') {
-               // Calculate percentage
             } else if (label == '√') {
               _calculateSquareRootOfExpression();
             }else {
@@ -292,7 +306,3 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 }
-
-//To Do
-//can't find the square root of a continues calclation
-//percentage is not working properly
