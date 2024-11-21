@@ -14,11 +14,11 @@ class CalculatorApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Calculator',
-      theme: ThemeData(
+      theme: ThemeData( // Set the app title
         primarySwatch: Colors.blue,
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      home: const MyHomePage(title: 'Calculator'),
+      home: const MyHomePage(title: 'Calculator'), // Set home widget
     );
   }
 }
@@ -33,39 +33,44 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   String _displayValue = '0';
-  String _expression = '';
+  String _expression = ''; // Expression entered by the user
   double _resultFontSize = 48;
-  bool _isResultDisplayed = false;
+  bool _isResultDisplayed = false; // Flag to check if the result is displayed
   static const int MAX_EXPRESSION_LENGTH = 15;
 
+  // Handles button press events
   void _onButtonPressed(String value) {
     setState(() {
       if (value == '=') {
-        _onEnter();
+        _onEnter(); // If '=' is pressed, evaluate the expression
         return;
       } else if (value == '√') {
-        _calculateSquareRootOfExpression();
+        _calculateSquareRootOfExpression(); // If '√' is pressed, calculate square root
         return;
       }
 
+      // Prevent adding more characters if the expression length exceeds the limit
       if (_expression.length >= MAX_EXPRESSION_LENGTH) {
         return;
       }
 
-      // Handle brackets
+      // Handle opening and closing brackets
       if (value == '( )') {
-        _handleBrackets();
+        _handleBrackets(); // Toggle brackets
       } else if (isOperator(value) &&
           _expression.isNotEmpty &&
           isOperator(_expression[_expression.length - 1])) {
+        // If the last character is an operator, replace it with the new one
         _expression = _expression.substring(0, _expression.length - 1) + value;
       } else {
+        // Add the button value to the expression
         _displayValue = '';
         _expression += value;
       }
     });
   }
 
+  // Toggles between opening and closing brackets based on the current expression
   void _handleBrackets() {
     setState(() {
       int openBrackets = _expression.split('(').length - 1;
@@ -81,16 +86,18 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  // Check if a string is an operator (e.g. +, -, x, /, .)
   bool isOperator(String value) {
     return value == '+' || value == '-' || value == 'x' || value == '/'  || value == '.' || value == '√';
   }
 
+  // Clear all expressions and results
   void _onClear() {
     setState(() {
       _displayValue = ' ';
       _expression = '';
       _resultFontSize = 64;
-      _isResultDisplayed = false;
+      _isResultDisplayed = false; // Reset result display flag
     });
   }
 
@@ -99,12 +106,13 @@ class _MyHomePageState extends State<MyHomePage> {
       if (_isResultDisplayed) {
         _displayValue = ' ';
       } else if (_expression.isNotEmpty) {
+        // Remove the last character of the expression
         _expression = _expression.substring(0, _expression.length - 1);
       }
     });
   }
 
-  // **New function to calculate the square root of the entire expression**
+  // Calculate the square root of the entire expression's result
   void _calculateSquareRootOfExpression() {
     _onEnter(); // First, calculate the result of the expression
     setState(() {
@@ -124,7 +132,7 @@ class _MyHomePageState extends State<MyHomePage> {
           }
 
           _isResultDisplayed = true;
-          _expression = ''; // Clear the expression after displaying the result
+          _expression = '';
         } else {
           // Display an error if trying to take the square root of a negative number
           _displayValue = 'Error';
@@ -136,14 +144,16 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  // Evaluate the entered expression and display the result
   void _onEnter() {
     try {
+      // No expression to evaluate
       if (_expression.isEmpty) return;
 
-      // Check for division by zero explicitly in the expression
+      // Prevent division by zero
       if (_expression.contains('/0')) {
         setState(() {
-          _displayValue = 'Error';
+          _displayValue = 'Error'; // Show error for division by zero
           _expression = '';
           _isResultDisplayed = false;
         });
@@ -176,7 +186,7 @@ class _MyHomePageState extends State<MyHomePage> {
         return formattedResult;
       }
 
-      // Update the state with the formatted result
+      // Display the formatted result
       setState(() {
         if (eval.isInfinite || eval.isNaN) {
           _displayValue = 'Error'; // Handle cases like 1/0 or invalid numbers
@@ -195,8 +205,6 @@ class _MyHomePageState extends State<MyHomePage> {
         _resultFontSize = 46;
         _isResultDisplayed = false;
       });
-      // Optionally log the error for debugging
-      print('Error evaluating expression: $e');
     }
   }
   @override
@@ -268,9 +276,7 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-
-
-
+  // Build a row of calculator buttons
   Widget buildButtonRow(List<String> labels) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -282,6 +288,7 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
+  // Create a button with specific styling
   Widget buildCalculatorButton(String label, {double fontSize = 24}) {
     Color textColor;
     Color overlayColor;
