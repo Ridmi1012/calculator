@@ -52,7 +52,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
       if (_expression.length >= MAX_EXPRESSION_LENGTH) return; // Limit expression length
 
-      // Prevent consecutive dots or dots after operators
+      // Prevent multiple dots in a single number
       if (value == '.' &&
           (_expression.isEmpty ||
               _expression.endsWith('.') ||
@@ -65,6 +65,7 @@ class _MyHomePageState extends State<MyHomePage> {
         return;
       }
 
+      // Toggle brackets based on current expression
       if (value == '( )') {
         _handleBrackets(); // Handle brackets (open/close)
       } else if (value == '√') {
@@ -91,11 +92,12 @@ class _MyHomePageState extends State<MyHomePage> {
       if (openBrackets > closeBrackets) {
         _expression += ')';
       } else {
-        _expression += '(';
+        _expression += '('; // Add opening bracket otherwise
       }
     });
   }
 
+  // Check if the value is an operator
   bool isOperator(String value) {
     return value == '+' ||
         value == '-' ||
@@ -105,6 +107,7 @@ class _MyHomePageState extends State<MyHomePage> {
         value == '√';
   }
 
+  // Clear the entire calculator
   void _onClear() {
     setState(() {
       _displayValue = ' ';
@@ -114,6 +117,7 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  // Clear the last entry in the expression
   void _onClearEntry() {
     setState(() {
       if (_isResultDisplayed || _displayValue == 'Error') {
@@ -123,10 +127,13 @@ class _MyHomePageState extends State<MyHomePage> {
       }
     });
   }
+
+  // Perform calculation and display result
   void _onEnter() {
     try {
       if (_expression.isEmpty) return;
 
+      // Prevent division by zero
       if (_expression.contains('/0')) {
         setState(() {
           _displayValue = 'Error';
@@ -144,6 +151,7 @@ class _MyHomePageState extends State<MyHomePage> {
       ContextModel contextModel = ContextModel();
       double eval = exp.evaluate(EvaluationType.REAL, contextModel);
 
+      // Format the result for display
       String formatResult(num eval) {
         String formattedResult;
         if (eval.abs() < 1e4 && eval.abs() > 1e-4) {
@@ -162,7 +170,7 @@ class _MyHomePageState extends State<MyHomePage> {
           _displayValue = 'Error';
         } else {
           _displayValue = formatResult(eval);
-          _history.add('$_expression = $_displayValue');
+          _history.add('$_expression = $_displayValue'); // Save calculation to history
         }
         _isResultDisplayed = true;
         _resultFontSize = 64;
@@ -183,31 +191,34 @@ class _MyHomePageState extends State<MyHomePage> {
       backgroundColor: Colors.black,
       appBar: AppBar(
         title: Text(
-          widget.title,
+          widget.title, // Display the title of the calculator
           style: const TextStyle(color: Colors.white),
         ),
         backgroundColor: Colors.black,
         actions: [
-          IconButton(
+          IconButton( // History button
             icon: const Icon(Icons.history, color: Colors.white),
             onPressed: () {
               setState(() {
-                _isHistoryVisible = !_isHistoryVisible;
+                _isHistoryVisible = !_isHistoryVisible; // Toggle history visibility
               });
             },
           ),
         ],
       ),
+      // Switch between calculator view and history view based on `_isHistoryVisible`
       body: _isHistoryVisible
-          ? buildHistoryView()
-          : buildCalculatorView(),
+          ? buildHistoryView() // Show history view
+          : buildCalculatorView(), // Show calculator view
     );
   }
 
+  // Build the history view to display past calculations
   Widget buildHistoryView() {
     return Column(
       children: [
         Expanded(
+          // List of previous calculations
           child: ListView.builder(
             itemCount: _history.length,
             itemBuilder: (context, index) {
@@ -219,6 +230,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         fontSize: 18, color: Colors.white),
                   ),
                 ),
+                // Tap to load a previous calculation
                 onTap: () {
                   setState(() {
                     _expression = _history[index].split(' = ')[1];
@@ -229,6 +241,7 @@ class _MyHomePageState extends State<MyHomePage> {
             },
           ),
         ),
+        // Button to clear the history
         ElevatedButton(
           onPressed: () {
             setState(() {
@@ -241,6 +254,7 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
+  // Build the calculator view for input and output
   Widget buildCalculatorView() {
     return Container(
       alignment: Alignment.bottomRight,
@@ -255,7 +269,7 @@ class _MyHomePageState extends State<MyHomePage> {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
+                  scrollDirection: Axis.horizontal, // Scroll horizontally for long expressions
                   child: Align(
                     alignment: Alignment.centerRight,
                     child: Text(
@@ -297,12 +311,13 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
+  // Build a row of buttons
   Widget buildButtonRow(List<String> labels) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: labels.map((label) {
         return Expanded(
-          child: buildCalculatorButton(label),
+          child: buildCalculatorButton(label), // Build individual buttons
         );
       }).toList(),
     );
@@ -331,10 +346,11 @@ class _MyHomePageState extends State<MyHomePage> {
       overlayColor = Colors.grey.shade300;
     }
 
+    // Build the button UI
     return Container(
       margin: const EdgeInsets.all(5.0),
       child: AspectRatio(
-        aspectRatio: 1,
+        aspectRatio: 1, // Make buttons square
         child: ElevatedButton(
           style: ElevatedButton.styleFrom(
             backgroundColor: label == '=' ? Colors.transparent : Colors.black,
