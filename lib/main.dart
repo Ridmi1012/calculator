@@ -49,9 +49,6 @@ class _MyHomePageState extends State<MyHomePage> {
       if (value == '=') {
         _onEnter();
         return;
-      } else if (value == '√') {
-        _calculateSquareRootOfExpression();
-        return;
       }
 
       if (_expression.length >= MAX_EXPRESSION_LENGTH) return;
@@ -70,6 +67,8 @@ class _MyHomePageState extends State<MyHomePage> {
 
       if (value == '( )') {
         _handleBrackets();
+      } else if (value == '√') {
+        _expression += 'sqrt(';
       } else if (isOperator(value) &&
           _expression.isNotEmpty &&
           isOperator(_expression[_expression.length - 1])) {
@@ -122,26 +121,6 @@ class _MyHomePageState extends State<MyHomePage> {
       }
     });
   }
-
-  void _calculateSquareRootOfExpression() {
-    _onEnter();
-    setState(() {
-      try {
-        double result = double.parse(_displayValue);
-        if (result >= 0) {
-          double sqrtResult = sqrt(result);
-          _displayValue = sqrtResult.toStringAsFixed(4).replaceAll(RegExp(r'0+$'), '').replaceAll(RegExp(r'\.$'), '');
-          _isResultDisplayed = true;
-          _expression = '';
-        } else {
-          _displayValue = 'Error';
-        }
-      } catch (e) {
-        _displayValue = 'Error';
-      }
-    });
-  }
-
   void _onEnter() {
     try {
       if (_expression.isEmpty) return;
@@ -155,15 +134,21 @@ class _MyHomePageState extends State<MyHomePage> {
         return;
       }
 
+      // Replace 'sqrt(' with the actual MathExpression parser-friendly syntax
+      String parsedExpression = _expression.replaceAll('sqrt', 'sqrt');
+
       Parser parser = Parser();
-      Expression exp = parser.parse(_expression.replaceAll('x', '*'));
+      Expression exp = parser.parse(parsedExpression.replaceAll('x', '*'));
       ContextModel contextModel = ContextModel();
       double eval = exp.evaluate(EvaluationType.REAL, contextModel);
 
       String formatResult(num eval) {
         String formattedResult;
         if (eval.abs() < 1e4 && eval.abs() > 1e-4) {
-          formattedResult = eval.toStringAsFixed(7).replaceAll(RegExp(r'0+$'), '').replaceAll(RegExp(r'\.$'), '');
+          formattedResult = eval
+              .toStringAsFixed(7)
+              .replaceAll(RegExp(r'0+$'), '')
+              .replaceAll(RegExp(r'\.$'), '');
         } else {
           formattedResult = eval.toStringAsExponential(4);
         }
@@ -190,7 +175,6 @@ class _MyHomePageState extends State<MyHomePage> {
       });
     }
   }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -372,8 +356,6 @@ class _MyHomePageState extends State<MyHomePage> {
               _onClearEntry();
             } else if (label == '=') {
               _onEnter();
-            } else if (label == '√') {
-              _calculateSquareRootOfExpression();
             } else {
               if (_isResultDisplayed) {
                 _expression = _displayValue;
