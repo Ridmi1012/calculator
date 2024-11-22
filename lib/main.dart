@@ -357,7 +357,7 @@ class _MyHomePageState extends State<MyHomePage> {
               side: label == '=' ? const BorderSide(color: Colors.purple, width: 3.0) : BorderSide.none,
             ),
           ).copyWith(
-            overlayColor: MaterialStateProperty.all(overlayColor.withOpacity(0.3)),
+            overlayColor: WidgetStatePropertyAll(overlayColor.withOpacity(0.3)),
           ),
           child: Text(
             label,
