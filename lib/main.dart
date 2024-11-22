@@ -12,8 +12,8 @@ class CalculatorApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Calculator',
-      debugShowCheckedModeBanner: false,
+      title: 'Calculator', // App title
+      debugShowCheckedModeBanner: false,  // Disable debug banner
       theme: ThemeData(
         primarySwatch: Colors.blue,
         visualDensity: VisualDensity.adaptivePlatformDensity,
@@ -35,23 +35,24 @@ class _MyHomePageState extends State<MyHomePage> {
   String _displayValue = '0';
   String _expression = '';
   double _resultFontSize = 48;
-  bool _isResultDisplayed = false;
+  bool _isResultDisplayed = false; // Flag to check if result is displayed
   static const int MAX_EXPRESSION_LENGTH = 15;
 
-  // History storage
+  // History storage to keep track of previous calculations
   List<String> _history = [];
-  bool _isHistoryVisible = false; // Flag for toggling history visibility
+  bool _isHistoryVisible = false; // Flag to toggle history visibility
 
   // Handles button press events
   void _onButtonPressed(String value) {
     setState(() {
       if (value == '=') {
-        _onEnter();
+        _onEnter();  // If equal sign pressed, calculate the result
         return;
       }
 
-      if (_expression.length >= MAX_EXPRESSION_LENGTH) return;
+      if (_expression.length >= MAX_EXPRESSION_LENGTH) return; // Limit expression length
 
+      // Prevent consecutive dots or dots after operators
       if (value == '.' &&
           (_expression.isEmpty ||
               _expression.endsWith('.') ||
@@ -65,26 +66,28 @@ class _MyHomePageState extends State<MyHomePage> {
       }
 
       if (value == '( )') {
-        _handleBrackets();
+        _handleBrackets(); // Handle brackets (open/close)
       } else if (value == '√') {
         _expression += 'sqrt(';
       } else if (isOperator(value) &&
           _expression.isNotEmpty &&
           isOperator(_expression[_expression.length - 1])) {
+        // Replace the last operator if another operator is pressed
         _expression =
             _expression.substring(0, _expression.length - 1) + value;
       } else {
-        _displayValue = '';
-        _expression += value;
+        _displayValue = ''; // Clear display when a new input is given
+        _expression += value; // Add value (number or operator) to expression
       }
     });
   }
 
+  // Handle opening and closing brackets
   void _handleBrackets() {
     setState(() {
       int openBrackets = _expression.split('(').length - 1;
       int closeBrackets = _expression.split(')').length - 1;
-
+// Add closing bracket if there are more opening brackets
       if (openBrackets > closeBrackets) {
         _expression += ')';
       } else {
