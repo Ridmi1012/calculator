@@ -14,11 +14,13 @@ class CalculatorApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Calculator',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData( // Set the app title
         primarySwatch: Colors.blue,
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
       home: const MyHomePage(title: 'Calculator'), // Set home widget
+
     );
   }
 }
@@ -52,6 +54,18 @@ class _MyHomePageState extends State<MyHomePage> {
       // Prevent adding more characters if the expression length exceeds the limit
       if (_expression.length >= MAX_EXPRESSION_LENGTH) {
         return;
+      }
+
+      // Prevent invalid numeric formats
+      if (value == '.' &&
+          (_expression.isEmpty ||
+              _expression.endsWith('.') ||
+              isOperator(_expression[_expression.length - 1]))) {
+        return; // Disallow multiple or misplaced decimal points
+      }
+      if (value == '.' &&
+          _expression.split(RegExp(r'[^0-9.]')).last.contains('.')) {
+        return; // Disallow multiple decimals in the same number
       }
 
       // Handle opening and closing brackets
