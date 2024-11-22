@@ -113,7 +113,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void _onClearEntry() {
     setState(() {
-      if (_isResultDisplayed) {
+      if (_isResultDisplayed || _displayValue == 'Error') {
         _displayValue = ' ';
       } else if (_expression.isNotEmpty) {
         _expression = _expression.substring(0, _expression.length - 1);
