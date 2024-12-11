@@ -1,3 +1,6 @@
+//IM_2021_052
+//L.K.R. Silva
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:math_expressions/math_expressions.dart';
@@ -49,6 +52,12 @@ class _MyHomePageState extends State<MyHomePage> {
         _onEnter();  // If equal sign pressed, calculate the result
         return;
       }
+
+      // if (_isResultDisplayed) {
+      //   _expression = _displayValue; // Start new calculation with the previous result
+      //   _displayValue = ''; // Clear display
+      //   _isResultDisplayed = false; // Reset the result flag
+      // }.
 
       if (_expression.length >= MAX_EXPRESSION_LENGTH) return; // Limit expression length
 
@@ -176,6 +185,7 @@ class _MyHomePageState extends State<MyHomePage> {
         _resultFontSize = 64;
         _expression = '';
       });
+      // Catch invalid expressions or errors in evaluation
     } catch (e) {
       setState(() {
         _displayValue = 'Error';
